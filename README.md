@@ -26,6 +26,29 @@ The weather containers connect to CL's PostgreSQL service using:
 
 The `postgres` hostname works because both Compose projects join the external `cl_shared_data` network. Weather does not start a second PostgreSQL container.
 
+## Import historical SQLite weather data
+
+The repository includes a one-time importer for the old Local Services SQLite database. It reads the SQLite file read-only and skips records that already exist in PostgreSQL with the same `created_at` and `location`.
+
+With the old database at `~/local/data/flaskr.sqlite`, first do a dry run:
+
+    docker compose run --rm -v ~/local/data/flaskr.sqlite:/import/flaskr.sqlite:ro web python scripts/import_sqlite_weather.py /import/flaskr.sqlite --dry-run
+
+Then import:
+
+    docker compose run --rm -v ~/local/data/flaskr.sqlite:/import/flaskr.sqlite:ro web python scripts/import_sqlite_weather.py /import/flaskr.sqlite
+
+The importer reports how many records were imported and how many were skipped because they were already present.
+
+Verify from the CL PostgreSQL container:
+
+    cd ~/dev/jmcausey/cl
+    docker compose exec postgres psql -U cl -d cl -c "SELECT COUNT(*) FROM chart;"
+
+And inspect recent history:
+
+    docker compose exec postgres psql -U cl -d cl -c "SELECT created_at, location, temperature, humidity, windspeed, winddirection FROM chart ORDER BY created_at DESC LIMIT 10;"
+
 ## Features
 
 - OpenWeather current-condition collection

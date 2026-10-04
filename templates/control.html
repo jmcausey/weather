@@ -2,43 +2,188 @@
 {% block title %}Weather Control Panel{% endblock %}
 {% block content %}
 <div class="weather-page control-panel-page">
-  <div class="page-heading"><div><h1>Weather Control Panel</h1><p class="location-label">Schedule weather collection by geographic coordinates.</p></div></div>
+  <div class="page-heading">
+    <div>
+      <h1>Weather Control Panel</h1>
+      <p class="location-label">Schedule weather collection by geographic coordinates.</p>
+    </div>
+  </div>
+
   <form method="post" class="card">
     <input type="hidden" name="action" value="save">
+
     <div class="grid">
-      <label>Job name<br><input name="name" required placeholder="Athens weather"></label>
-      <label class="location-autocomplete">Location<br>
-        <input name="location" id="weather-location" autocomplete="off" required placeholder="Start typing a city...">
+      <label>
+        Job name<br>
+        <input name="name" required placeholder="Athens weather">
+      </label>
+
+      <label class="location-autocomplete">
+        Location<br>
+        <input
+          name="location"
+          id="weather-location"
+          autocomplete="off"
+          required
+          placeholder="Start typing a city..."
+        >
         <div id="location-suggestions" class="location-suggestions" role="listbox"></div>
       </label>
-      <label>Latitude<br><input name="latitude" id="weather-latitude" type="number" step="any" min="-90" max="90" required></label>
-      <label>Longitude<br><input name="longitude" id="weather-longitude" type="number" step="any" min="-180" max="180" required></label>
-      <label>Collection interval<br><select name="interval_minutes" required><option value="15">Every 15 minutes</option><option value="60" selected>Hourly</option><option value="240">Every 4 hours</option><option value="1440">Daily</option></select></label>
+
+      <label>
+        Latitude<br>
+        <input name="latitude" id="weather-latitude" type="number" step="any" min="-90" max="90" required>
+      </label>
+
+      <label>
+        Longitude<br>
+        <input name="longitude" id="weather-longitude" type="number" step="any" min="-180" max="180" required>
+      </label>
+
+      <label>
+        Collection interval<br>
+        <select name="interval_minutes" required>
+          <option value="15">Every 15 minutes</option>
+          <option value="60" selected>Hourly</option>
+          <option value="240">Every 4 hours</option>
+          <option value="1440">Daily</option>
+        </select>
+      </label>
     </div>
-    <p><label><input type="checkbox" name="enabled" checked> Enabled</label></p>
+
+    <p>
+      <label><input type="checkbox" name="enabled" checked> Enabled</label>
+    </p>
+
     <button type="submit">Save Weather Job</button>
   </form>
+
   <h2>Configured Weather Jobs</h2>
-  <div class="table-responsive"><table>
-    <tr><th>Name</th><th>Location</th><th>Coordinates</th><th>Interval</th><th>Status</th><th>Last Run</th><th>Actions</th></tr>
-    {% for job in jobs %}
-    <tr><td>{{ job.name }}</td><td>{{ job.location }}</td><td>{{ "%.4f"|format(job.latitude) }}, {{ "%.4f"|format(job.longitude) }}</td>
-    <td>{% if job.interval_minutes == 15 %}Every 15 minutes{% elif job.interval_minutes == 60 %}Hourly{% elif job.interval_minutes == 240 %}Every 4 hours{% elif job.interval_minutes == 1440 %}Daily{% endif %}</td>
-    <td>{{ "Enabled" if job.enabled else "Disabled" }}{% if job.last_status %}<br><small>{{ job.last_status }}</small>{% endif %}{% if job.last_error %}<br><small>{{ job.last_error }}</small>{% endif %}</td>
-    <td>{{ job.last_run_at or "Never run" }}</td>
-    <td><form class="inline" method="post"><input type="hidden" name="action" value="run"><input type="hidden" name="job_id" value="{{ job.id }}"><button>Run Now</button></form><form class="inline" method="post"><input type="hidden" name="action" value="toggle"><input type="hidden" name="job_id" value="{{ job.id }}"><button>{{ "Disable" if job.enabled else "Enable" }}</button></form><form class="inline" method="post"><input type="hidden" name="action" value="delete"><input type="hidden" name="job_id" value="{{ job.id }}"><button>Delete</button></form></td></tr>
-    {% else %}<tr><td colspan="7">No weather jobs configured.</td></tr>{% endfor %}
-  </table></div>
+
+  <div class="table-responsive">
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Location</th>
+        <th>Coordinates</th>
+        <th>Interval</th>
+        <th>Status</th>
+        <th>Last Run</th>
+        <th>Actions</th>
+      </tr>
+
+      {% for job in jobs %}
+      <tr>
+        <td>{{ job.name }}</td>
+        <td>{{ job.location }}</td>
+        <td>{{ "%.4f"|format(job.latitude) }}, {{ "%.4f"|format(job.longitude) }}</td>
+        <td>
+          {% if job.interval_minutes == 15 %}
+            Every 15 minutes
+          {% elif job.interval_minutes == 60 %}
+            Hourly
+          {% elif job.interval_minutes == 240 %}
+            Every 4 hours
+          {% elif job.interval_minutes == 1440 %}
+            Daily
+          {% endif %}
+        </td>
+        <td>
+          {{ "Enabled" if job.enabled else "Disabled" }}
+          {% if job.last_status %}<br><small>{{ job.last_status }}</small>{% endif %}
+          {% if job.last_error %}<br><small>{{ job.last_error }}</small>{% endif %}
+        </td>
+        <td>{{ job.last_run_at or "Never run" }}</td>
+        <td>
+          <form class="inline" method="post">
+            <input type="hidden" name="action" value="run">
+            <input type="hidden" name="job_id" value="{{ job.id }}">
+            <button>Run Now</button>
+          </form>
+          <form class="inline" method="post">
+            <input type="hidden" name="action" value="toggle">
+            <input type="hidden" name="job_id" value="{{ job.id }}">
+            <button>{{ "Disable" if job.enabled else "Enable" }}</button>
+          </form>
+          <form class="inline" method="post">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="job_id" value="{{ job.id }}">
+            <button>Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7">No weather jobs configured.</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
 </div>
+
 <script>
-(() => {
-  const input=document.getElementById("weather-location"), lat=document.getElementById("weather-latitude"), lon=document.getElementById("weather-longitude"), box=document.getElementById("location-suggestions");
-  let timer=null;
-  function choose(item){input.value=item.name;lat.value=item.latitude;lon.value=item.longitude;box.innerHTML="";box.hidden=true}
-  function show(items){box.innerHTML="";items.forEach(item=>{const b=document.createElement("button");b.type="button";b.className="location-option";b.innerHTML="<strong>"+item.name.replace(/</g,"&lt;")+"</strong><small>"+Number(item.latitude).toFixed(4)+", "+Number(item.longitude).toFixed(4)+"</small>";b.addEventListener("click",()=>choose(item));box.appendChild(b)});box.hidden=!items.length}
-  input.addEventListener("input",()=>{clearTimeout(timer);const q=input.value.trim();if(q.length<2){box.hidden=true;return}timer=setTimeout(async()=>{try{const r=await fetch("/api/location-search?q="+encodeURIComponent(q));const d=await r.json();show(d.locations||[])}catch(e){box.hidden=true}},150)});
-  input.addEventListener("keydown",e=>{if(e.key==="Escape")box.hidden=true});
-  document.addEventListener("click",e=>{if(!input.contains(e.target)&&!box.contains(e.target))box.hidden=true});
-})();
+  (() => {
+    const input = document.getElementById("weather-location");
+    const lat = document.getElementById("weather-latitude");
+    const lon = document.getElementById("weather-longitude");
+    const box = document.getElementById("location-suggestions");
+    let timer = null;
+
+    function choose(item) {
+      input.value = item.name;
+      lat.value = item.latitude;
+      lon.value = item.longitude;
+      box.innerHTML = "";
+      box.hidden = true;
+    }
+
+    function show(items) {
+      box.innerHTML = "";
+      items.forEach((item) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "location-option";
+        b.innerHTML =
+          "<strong>" + item.name.replace(/</g, "&lt;") + "</strong><small>" +
+          Number(item.latitude).toFixed(4) + ", " + Number(item.longitude).toFixed(4) +
+          "</small>";
+        b.addEventListener("click", () => choose(item));
+        box.appendChild(b);
+      });
+      box.hidden = !items.length;
+    }
+
+    input.addEventListener("input", () => {
+      clearTimeout(timer);
+      const q = input.value.trim();
+
+      if (q.length < 2) {
+        box.hidden = true;
+        return;
+      }
+
+      timer = setTimeout(async () => {
+        try {
+          const r = await fetch("/api/location-search?q=" + encodeURIComponent(q));
+          const d = await r.json();
+          show(d.locations || []);
+        } catch (e) {
+          box.hidden = true;
+        }
+      }, 150);
+    });
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        box.hidden = true;
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!input.contains(e.target) && !box.contains(e.target)) {
+        box.hidden = true;
+      }
+    });
+  })();
 </script>
 {% endblock %}

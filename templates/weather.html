@@ -1,1 +1,44 @@
-{% extends "base.html" %}{% block title %}Weather{% endblock %}{% block content %}<div class="weather-page"><div class="page-heading"><h1>Weather</h1><span class="location-label">{% if selected_city == "__current__" %}{{ current_location }}{% elif selected_city %}{{ selected_city }}{% else %}All locations{% endif %}</span></div><form method="GET" action="{{ url_for('weather.weather') }}" class="location-form"><label for="city">Location</label><select name="city" id="city"><option value="">All Cities</option><option value="__current__" {% if selected_city == "__current__" %}selected{% endif %}>Current Location{% if current_location %} ({{ current_location }}){% endif %}</option>{% for c in cities %}<option value="{{ c }}" {% if selected_city == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select><button type="submit">Filter</button></form>{% if table %}<div class="table-responsive">{{ table|safe }}</div>{% else %}<p class="empty-state">No weather data available yet. Run <code>python -m weather.tasks</code> after configuring OpenWeather.</p>{% endif %}</div>{% endblock %}
+{% extends "base.html" %}
+{% block title %}Weather{% endblock %}
+{% block content %}
+<div class="weather-page">
+  <div class="page-heading">
+    <h1>Weather</h1>
+    <span class="location-label">
+      {% if selected_city == "__current__" %}
+        {{ current_location }}
+      {% elif selected_city %}
+        {{ selected_city }}
+      {% else %}
+        All locations
+      {% endif %}
+    </span>
+  </div>
+
+  <form method="GET" action="{{ url_for('weather.weather') }}" class="location-form">
+    <label for="city">Location</label>
+    <select name="city" id="city">
+      <option value="">All Cities</option>
+      <option value="__current__" {% if selected_city == "__current__" %}selected{% endif %}>
+        Current Location
+        {% if current_location %} ({{ current_location }}){% endif %}
+      </option>
+      {% for c in cities %}
+      <option value="{{ c }}" {% if selected_city == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Filter</button>
+  </form>
+
+  {% if table %}
+    <div class="table-responsive">
+      {{ table|safe }}
+    </div>
+  {% else %}
+    <p class="empty-state">
+      No weather data available yet. Run <code>python -m weather.tasks</code> after configuring OpenWeather.
+    </p>
+  {% endif %}
+</div>
+{% endblock %}
+

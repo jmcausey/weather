@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="900"><title>{% block title %}Weather{% endblock %}</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="data-page">
+<nav class="navbar">
+<div class="nav-top-row"><ul class="nav-left"><li><h1><a href="{{ url_for('weather.weather') }}">{{ hostname }}</a></h1></li><li class="active"><a href="{{ url_for('weather.weather') }}">Weather</a></li></ul></div>
+<div class="nav-sub-row"><ul class="nav-sub-right"><li><a href="{{ url_for('weather.weather') }}">Current Weather</a></li><li><a href="#">Forecast</a></li><li><a href="#">Historical Data</a></li></ul></div>
+<div class="nav-bottom-row"><ul class="weather-metrics"><li><span class="weather-badge"><span id="nav-location-display">--</span></span></li><li><span class="weather-badge">temp: <span id="nav-temp-display">--</span></span></li><li><span class="weather-badge">humidity: <span id="nav-humidity-display">--</span>%</span></li><li><span class="weather-badge">wind: <span id="nav-windspeed-display">--</span> mph</span></li><li><span class="weather-badge">dir: <span id="nav-winddir-display">--</span></span></li></ul><ul class="clock-container"><li id="live-clock">--:--:-- --</li></ul></div>
+</nav>
+<main class="content">{% block content %}{% endblock %}</main>
+<script>
+function getCardinalDirection(d){const a=Number(d);if(isNaN(a))return"N/A";return["N","NE","E","SE","S","SW","W","NW"][Math.round(a/45)%8]}
+function updateClock(){document.getElementById("live-clock").textContent=new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:true})}
+async function fetchMetric(path,id,transform=v=>v){try{const r=await fetch(path),d=await r.json(),e=document.getElementById(id);if(e&&d){const k=Object.keys(d)[0];if(d[k]!=null)e.textContent=transform(d[k])}}catch(e){console.error("Weather metric error:",e)}}
+async function refreshAllMetrics(){await Promise.all([fetchMetric("/api/latest-temp","nav-temp-display"),fetchMetric("/api/latest-humidity","nav-humidity-display"),fetchMetric("/api/latest-windspeed","nav-windspeed-display"),fetchMetric("/api/latest-wind-direction","nav-winddir-display",getCardinalDirection),fetchMetric("/api/current-location","nav-location-display")])}
+updateClock();setInterval(updateClock,1000);document.addEventListener("DOMContentLoaded",()=>{refreshAllMetrics();setInterval(refreshAllMetrics,15*60*1000)})
+</script></body></html>

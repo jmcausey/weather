@@ -1,6 +1,7 @@
 services:
   web:
     build: .
+    hostname: weatherwise
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-cl}:${POSTGRES_PASSWORD:-change-me}@postgres:5432/${POSTGRES_DB:-cl}

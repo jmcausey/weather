@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Weather Control Panel{% endblock %}
+{% block content %}
+<div class="weather-page control-panel-page">
+  <div class="page-heading">
+    <div><h1>Weather Control Panel</h1><p class="location-label">Schedule weather collection by geographic coordinates.</p></div>
+  </div>
+
+  <form method="post" class="card">
+    <input type="hidden" name="action" value="save">
+    <div class="grid">
+      <label>Job name<br><input name="name" required placeholder="Athens weather"></label>
+      <label>Location<br>
+        <select name="location" id="weather-location" required>
+          <option value="">Choose a location</option>
+          {% for location in locations %}
+          <option value="{{ location.name }}" data-lat="{{ location.latitude }}" data-lon="{{ location.longitude }}">{{ location.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Latitude<br><input name="latitude" id="weather-latitude" type="number" step="any" min="-90" max="90" required></label>
+      <label>Longitude<br><input name="longitude" id="weather-longitude" type="number" step="any" min="-180" max="180" required></label>
+      <label>Collection interval<br>
+        <select name="interval_minutes" required>
+          <option value="15">Every 15 minutes</option>
+          <option value="60" selected>Hourly</option>
+          <option value="240">Every 4 hours</option>
+          <option value="1440">Daily</option>
+        </select>
+      </label>
+    </div>
+    <p><label><input type="checkbox" name="enabled" checked> Enabled</label></p>
+    <button type="submit">Save Weather Job</button>
+  </form>
+
+  <h2>Configured Weather Jobs</h2>
+  <div class="table-responsive">
+    <table>
+      <tr><th>Name</th><th>Location</th><th>Coordinates</th><th>Interval</th><th>Status</th><th>Last Run</th><th>Actions</th></tr>
+      {% for job in jobs %}
+      <tr>
+        <td>{{ job.name }}</td>
+        <td>{{ job.location }}</td>
+        <td>{{ "%.4f"|format(job.latitude) }}, {{ "%.4f"|format(job.longitude) }}</td>
+        <td>
+          {% if job.interval_minutes == 15 %}Every 15 minutes
+          {% elif job.interval_minutes == 60 %}Hourly
+          {% elif job.interval_minutes == 240 %}Every 4 hours
+          {% elif job.interval_minutes == 1440 %}Daily
+          {% endif %}
+        </td>
+        <td>{{ "Enabled" if job.enabled else "Disabled" }}{% if job.last_status %}<br><small>{{ job.last_status }}</small>{% endif %}{% if job.last_error %}<br><small>{{ job.last_error }}</small>{% endif %}</td>
+        <td>{{ job.last_run_at or "Never run" }}</td>
+        <td>
+          <form class="inline" method="post"><input type="hidden" name="action" value="run"><input type="hidden" name="job_id" value="{{ job.id }}"><button>Run Now</button></form>
+          <form class="inline" method="post"><input type="hidden" name="action" value="toggle"><input type="hidden" name="job_id" value="{{ job.id }}"><button>{{ "Disable" if job.enabled else "Enable" }}</button></form>
+          <form class="inline" method="post"><input type="hidden" name="action" value="delete"><input type="hidden" name="job_id" value="{{ job.id }}"><button>Delete</button></form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">No weather jobs configured.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+<script>
+(() => {
+  const select = document.getElementById("weather-location");
+  const lat = document.getElementById("weather-latitude");
+  const lon = document.getElementById("weather-longitude");
+  select.addEventListener("change", () => {
+    const option = select.options[select.selectedIndex];
+    if (!option.value) return;
+    lat.value = option.dataset.lat;
+    lon.value = option.dataset.lon;
+  });
+})();
+</script>
+{% endblock %}

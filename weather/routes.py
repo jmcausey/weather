@@ -25,7 +25,9 @@ def location_options():
 @bp.route("/")
 @bp.route("/weather")
 def weather():
-    selected_city = request.args.get("city", "").strip()
+    selected_city = request.args.get("city")
+    if selected_city is not None:
+        selected_city = selected_city.strip()
     current_location = current_app.config.get("CURRENT_LOCATION", "").strip()
     query = """SELECT created_at AS "Time", location AS "Location", description AS "Description",
                temperature AS "Temperature (°F)", pressure AS "Barometer",
@@ -33,19 +35,19 @@ def weather():
                winddirection AS "Wind Direction", windspeed AS "Wind Speed",
                sunrise AS "Sunrise", sunset AS "Sunset" FROM chart"""
     params = ()
-    if selected_city:
-        query += " WHERE location = %s"
-        params = (selected_city,)
-    elif current_location:
+    if selected_city == "__current__":
         query += " WHERE location = %s"
         params = (current_location,)
+    elif selected_city:
+        query += " WHERE location = %s"
+        params = (selected_city,)
     query += " ORDER BY created_at DESC"
     df = query_dataframe(query, params)
     cities = query_dataframe("SELECT DISTINCT location FROM weather_jobs WHERE location IS NOT NULL ORDER BY location")["location"].tolist()
     if not df.empty:
         df["Time"] = pd.to_datetime(df["Time"], errors="coerce").dt.strftime("%Y-%m-%d %H:%M:%S")
     table = df.fillna("").to_html(classes="table table-striped table-bordered table-hover", index=False, escape=True) if not df.empty else ""
-    return render_template("weather.html", table=table, cities=cities, selected_city=selected_city)
+    return render_template("weather.html", table=table, cities=cities, selected_city=selected_city, current_location=current_location)
 
 @bp.route("/control", methods=("GET", "POST"))
 def control():

@@ -13,9 +13,6 @@ services:
              gunicorn --bind 0.0.0.0:5002 --workers 2 app:app"
     ports:
       - "${APP_PORT:-5002}:5002"
-    depends_on:
-      postgres:
-        condition: service_started
     networks:
       - cl_shared_data
 
@@ -28,9 +25,6 @@ services:
       OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY:-}
       LOCATIONS_FILE: /app/data/locations/locations.json
     command: python scheduler.py
-    depends_on:
-      postgres:
-        condition: service_started
     networks:
       - cl_shared_data
 

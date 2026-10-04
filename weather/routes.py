@@ -41,7 +41,7 @@ def weather():
         params = (current_location,)
     query += " ORDER BY created_at DESC"
     df = query_dataframe(query, params)
-    cities = query_dataframe("SELECT DISTINCT location FROM weather_jobs WHERE enabled = TRUE AND location IS NOT NULL ORDER BY location")["location"].tolist()
+    cities = query_dataframe("SELECT DISTINCT location FROM weather_jobs WHERE location IS NOT NULL ORDER BY location")["location"].tolist()
     if not df.empty:
         df["Time"] = pd.to_datetime(df["Time"], errors="coerce").dt.strftime("%Y-%m-%d %H:%M:%S")
     table = df.fillna("").to_html(classes="table table-striped table-bordered table-hover", index=False, escape=True) if not df.empty else ""

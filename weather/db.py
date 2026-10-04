@@ -2,15 +2,18 @@ import psycopg
 from psycopg.rows import dict_row
 from flask import current_app, g
 
+
 def get_db():
     if "db" not in g:
         g.db = psycopg.connect(current_app.config["DATABASE_URL"], row_factory=dict_row)
     return g.db
 
+
 def close_db(exception=None):
     db = g.pop("db", None)
     if db is not None:
         db.close()
+
 
 def init_db(app):
     app.teardown_appcontext(close_db)
@@ -40,5 +43,25 @@ def init_db(app):
             cur.execute("""
                 CREATE INDEX IF NOT EXISTS idx_chart_location_created
                 ON chart(location, created_at DESC);
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS weather_jobs (
+                    id BIGSERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    location TEXT NOT NULL,
+                    latitude DOUBLE PRECISION NOT NULL,
+                    longitude DOUBLE PRECISION NOT NULL,
+                    interval_minutes INTEGER NOT NULL CHECK (interval_minutes IN (15, 60, 240, 1440)),
+                    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                    last_run_at TIMESTAMP,
+                    last_status TEXT,
+                    last_error TEXT,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS idx_weather_jobs_enabled_run
+                ON weather_jobs(enabled, last_run_at);
             """)
         db.commit()

@@ -30,3 +30,4 @@ body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-seri
   .content{padding:.9rem}
   .table-responsive .table th,.table-responsive .table td{padding:.35rem .4rem;font-size:.8rem}
 }
+\n.card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:1rem;margin:.75rem 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:.75rem}.control-panel-page .grid>label{min-width:0}.control-panel-page input:not([type=checkbox]),.control-panel-page select{width:100%;min-width:0;max-width:100%;font:inherit;padding:.45rem;border:1px solid #cbd5e0;border-radius:4px;background:#fff}.control-panel-page table{width:100%;border-collapse:collapse;background:#fff}.control-panel-page td,.control-panel-page th{padding:.6rem;border-bottom:1px solid #ddd;text-align:left;vertical-align:top}.inline{display:inline}.inline button{margin:.15rem .1rem}

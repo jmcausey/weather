@@ -1,21 +1,23 @@
-import json, math, os, sqlite3, time
+import json, math, os, time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Dict, Tuple
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
+import psycopg
 import requests
+from psycopg.rows import dict_row
 
-DATABASE = os.path.expanduser(os.environ.get("WEATHER_DATABASE", "~/local/data/weather.sqlite"))
-LOCATIONS_FILE = os.path.expanduser(os.environ.get("LOCATIONS_FILE", "~/local/data/locations/locations.json"))
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://cl:change-me@localhost:5432/cl")
+LOCATIONS_FILE = os.path.expanduser(os.environ.get("LOCATIONS_FILE", str(Path(__file__).resolve().parent.parent / "data" / "locations" / "locations.json")))
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
 CURRENT_LOCATION = os.environ.get("CURRENT_LOCATION")
 OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
-def load_locations() -> Dict[str, Tuple[float,float]]:
+def load_locations() -> Dict[str, Tuple[float, float]]:
     try:
         with open(LOCATIONS_FILE, encoding="utf-8") as f: return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as exc:
@@ -27,16 +29,17 @@ def get_location_coordinates(query):
     return None, None
 
 def get_db_connection():
-    Path(DATABASE).expanduser().resolve().parent.mkdir(parents=True, exist_ok=True)
-    conn=sqlite3.connect(DATABASE); conn.row_factory=sqlite3.Row; return conn
+    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
 
 def get_weather_data_from_api(city_name=None):
     city_name = city_name or CURRENT_LOCATION
     if not city_name or not OPENWEATHER_API_KEY: return None
     lat, lon = get_location_coordinates(city_name)
-    if lat is None or lon is None: return None
+    if lat is None or lon is None:
+        print(f"No coordinates found for {city_name}")
+        return None
     try:
-        r=requests.get(OPENWEATHER_BASE_URL, params={"lat":lat,"lon":lon,"appid":OPENWEATHER_API_KEY,"units":"imperial"}, timeout=10)
+        r = requests.get(OPENWEATHER_BASE_URL, params={"lat":lat,"lon":lon,"appid":OPENWEATHER_API_KEY,"units":"imperial"}, timeout=10)
         r.raise_for_status(); return r.json()
     except requests.RequestException as exc:
         print(f"Error fetching weather data: {exc}"); return None
@@ -57,21 +60,21 @@ def process_and_insert_weather_data(api_data):
               "windspeed":wind.get("speed"),"winddirection":wind.get("deg"),"clouds":api_data.get("clouds",{}).get("all"),
               "sunrise":local_time(system.get("sunrise")),"sunset":local_time(system.get("sunset")),"dew_point":dew}
         with get_db_connection() as conn:
-            conn.execute("""INSERT INTO chart
-              (location,geolocation,description,temperature,pressure,feelslike,humidity,visibility,windspeed,winddirection,clouds,sunrise,sunset,dew_point)
-              VALUES (:location,:geolocation,:description,:temperature,:pressure,:feelslike,:humidity,:visibility,:windspeed,:winddirection,:clouds,:sunrise,:sunset,:dew_point)""", data)
-            conn.commit()
+            conn.execute("""INSERT INTO chart (location,geolocation,description,temperature,pressure,feelslike,humidity,visibility,windspeed,winddirection,clouds,sunrise,sunset,dew_point)
+              VALUES (%(location)s,%(geolocation)s,%(description)s,%(temperature)s,%(pressure)s,%(feelslike)s,%(humidity)s,%(visibility)s,%(windspeed)s,%(winddirection)s,%(clouds)s,%(sunrise)s,%(sunset)s,%(dew_point)s)""", data)
         print(f"Successfully recorded weather for {data['location']}."); return True
     except Exception as exc:
         print(f"Error processing or inserting data: {exc}"); return False
 
-def graph1(db_path=DATABASE, location_name=CURRENT_LOCATION, output_filename=None):
+def graph1(database_url=DATABASE_URL, location_name=CURRENT_LOCATION, output_filename=None):
     if not output_filename:
         output_dir=os.path.expanduser("~/local/data/graphs"); os.makedirs(output_dir,exist_ok=True)
         output_filename=os.path.join(output_dir,f"mpl_stackplot_{int(time.time())}.png")
-    conn=sqlite3.connect(db_path)
-    df=pd.read_sql_query("SELECT created_at,temperature,humidity FROM chart WHERE location=? ORDER BY created_at ASC",conn,params=(location_name,))
-    conn.close()
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT created_at,temperature,humidity FROM chart WHERE location=%s ORDER BY created_at ASC",(location_name,))
+            rows=cur.fetchall()
+    df=pd.DataFrame(rows, columns=["created_at","temperature","humidity"])
     if df.empty: return None
     df["created_at"]=pd.to_datetime(df["created_at"]); df.set_index("created_at",inplace=True)
     fig,ax=plt.subplots(figsize=(12,6)); ax.stackplot(df.index,df["temperature"],df["humidity"],labels=["Temperature","Humidity (%)"],alpha=.6)

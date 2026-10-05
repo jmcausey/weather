@@ -21,7 +21,7 @@
             <div class="forecast-temp">{{ item.temp }}°</div>
             <div class="forecast-description">{{ item.description }}</div>
             <div class="forecast-detail"><span>Feels</span><strong>{{ item.feels_like }}°</strong></div>
-            <div class="forecast-detail"><span>Rain</span><strong>{{ item.pop }}%</strong></div>
+            <div class="forecast-detail"><span>Rain</span><strong>{{ item["pop"] }}%</strong></div>
             <div class="forecast-detail"><span>Wind</span><strong>{{ item.wind_speed }} mph</strong></div>
             <div class="forecast-detail"><span>Humidity</span><strong>{{ item.humidity }}%</strong></div>
           </article>

@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, url_for
 from .db import get_db
-from .tasks import run_weather_job
+from .tasks import fetch_forecast, run_weather_job
 
 bp = Blueprint("weather", __name__)
 
@@ -42,6 +42,17 @@ def weather():
     return render_template(
         "weather.html",
         record=record,
+        current_location=current_location,
+    )
+
+
+@bp.route("/forecast")
+def forecast():
+    current_location = current_app.config.get("CURRENT_LOCATION", "").strip()
+    forecast_data = fetch_forecast(current_location)
+    return render_template(
+        "forecast.html",
+        forecast=forecast_data,
         current_location=current_location,
     )
 

@@ -67,7 +67,6 @@
     <div><span>☀</span><b>{{ record["Sunrise"] or "—" }}</b><small>Sunrise</small></div>
     <div><span>◒</span><b>{{ record["Sunset"] or "—" }}</b><small>Sunset</small></div>
     <div><span>☁</span><b>{{ record["Clouds"] if record["Clouds"] is not none else "—" }}%</b><small>Cloud cover</small></div>
-    <div><span>◷</span><b>{{ record["Time"] }}</b><small>Last observation</small></div>
   </section>
   {% else %}
   <div class="empty-state"><h2>No current weather data</h2><p>No observation has been collected for <strong>{{ current_location }}</strong> yet.</p><p>Run the weather job for this location from the <a href="{{ url_for('weather.control') }}">Control Panel</a>.</p></div>

@@ -7,7 +7,7 @@
 <title>{% block title %}Weather{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body class="data-page">
+<body class="data-page" style="overflow-y:hidden">
 <main class="content">{% block content %}{% endblock %}</main>
 <script>
   function getCardinalDirection(d) {
@@ -35,6 +35,15 @@
       fetchMetric("/api/current-location", "nav-location-display"),
     ]);
   }
+  function reportFrameHeight() {
+    if (window.parent === window) return;
+    const height = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    window.parent.postMessage({type: "localsonly-height", height}, "*");
+  }
+  window.addEventListener("load", reportFrameHeight);
+  window.addEventListener("resize", reportFrameHeight);
+  new ResizeObserver(reportFrameHeight).observe(document.body);
+
   document.addEventListener("DOMContentLoaded", () => {
     refreshAllMetrics();
     setInterval(refreshAllMetrics, 15 * 60 * 1000);

@@ -1,11 +1,32 @@
 import json
 import os
+from datetime import datetime
+
 import pandas as pd
 from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, url_for
+
 from .db import get_db
 from .tasks import fetch_forecast, run_weather_job
 
 bp = Blueprint("weather", __name__)
+
+
+def pretty_datetime(value):
+    """Return a compact date/time like 'Oct 4 · 12:19 PM'."""
+    if value is None or value == "":
+        return value
+    if isinstance(value, pd.Timestamp):
+        value = value.to_pydatetime()
+    if isinstance(value, datetime):
+        dt = value
+    else:
+        text = str(value).strip()
+        try:
+            dt = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except ValueError:
+            return text
+    return f"{dt.strftime('%b')} {dt.day} · {dt.strftime('%I:%M %p').lstrip('0')}"
+
 
 def query_dataframe(query, params=()):
     with get_db().cursor() as cur:
@@ -14,6 +35,7 @@ def query_dataframe(query, params=()):
         columns = [desc.name for desc in cur.description]
     return pd.DataFrame(rows, columns=columns)
 
+
 def location_options():
     try:
         with open(current_app.config["LOCATIONS_FILE"], encoding="utf-8") as f:
@@ -21,6 +43,7 @@ def location_options():
         return [{"name": name, "latitude": coords[0], "longitude": coords[1]} for name, coords in data.items()]
     except (FileNotFoundError, json.JSONDecodeError, TypeError, IndexError):
         return []
+
 
 @bp.route("/")
 @bp.route("/weather")
@@ -39,6 +62,9 @@ def weather():
         (current_location,),
     )
     record = row.iloc[0].to_dict() if not row.empty else None
+    if record:
+        for field in ("Time", "Sunrise", "Sunset"):
+            record[field] = pretty_datetime(record[field])
     return render_template(
         "weather.html",
         record=record,
@@ -89,6 +115,7 @@ def historical():
         current_location=current_app.config.get("CURRENT_LOCATION", ""),
     )
 
+
 @bp.route("/control", methods=("GET", "POST"))
 def control():
     db = get_db()
@@ -137,6 +164,7 @@ def control():
     jobs = db.execute("SELECT * FROM weather_jobs ORDER BY enabled DESC, name").fetchall()
     return render_template("control.html", jobs=jobs, locations=location_options())
 
+
 @bp.route("/api/location-search")
 def location_search():
     query = request.args.get("q", "").strip().lower()
@@ -151,29 +179,35 @@ def location_search():
     matches.sort(key=lambda x: (x[0], x[1], x[2]["name"].lower()))
     return jsonify({"locations": [item for _, _, item in matches[:12]]})
 
+
 @bp.route("/api/latest-temp")
 def latest_temp():
     row = get_db().execute("SELECT temperature FROM chart WHERE location = %s ORDER BY created_at DESC LIMIT 1", (current_app.config.get("CURRENT_LOCATION", ""),)).fetchone()
     return jsonify({"temperature": f"{row['temperature']}°" if row and row["temperature"] is not None else "N/A"})
+
 
 @bp.route("/api/latest-humidity")
 def latest_humidity():
     row = get_db().execute("SELECT humidity FROM chart WHERE location = %s ORDER BY created_at DESC LIMIT 1", (current_app.config.get("CURRENT_LOCATION", ""),)).fetchone()
     return jsonify({"humidity": row["humidity"] if row and row["humidity"] is not None else "N/A"})
 
+
 @bp.route("/api/latest-windspeed")
 def latest_windspeed():
     row = get_db().execute("SELECT windspeed FROM chart WHERE location = %s ORDER BY created_at DESC LIMIT 1", (current_app.config.get("CURRENT_LOCATION", ""),)).fetchone()
     return jsonify({"windspeed": row["windspeed"] if row and row["windspeed"] is not None else "N/A"})
+
 
 @bp.route("/api/latest-wind-direction")
 def latest_wind_direction():
     row = get_db().execute("SELECT winddirection FROM chart WHERE location = %s ORDER BY created_at DESC LIMIT 1", (current_app.config.get("CURRENT_LOCATION", ""),)).fetchone()
     return jsonify({"wind_degrees": row["winddirection"] if row else None})
 
+
 @bp.route("/api/current-location")
 def current_location():
     return jsonify({"location": current_app.config.get("CURRENT_LOCATION") or "Unknown Location"})
+
 
 @bp.context_processor
 def navigation_context():

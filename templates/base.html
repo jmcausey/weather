@@ -7,18 +7,14 @@
     <title>{% block title %}Weather{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   </head>
-
   <body class="data-page">
     <nav class="navbar">
       <div class="nav-top-row">
         <ul class="nav-left">
-          <li>
-            <h1><a href="{{ url_for('weather.weather') }}">{{ hostname }}</a></h1>
-          </li>
-           <li><a href="{{ url_for('weather.control') }}">Control Panel</a></li>
+          <li><h1><a href="{{ url_for('weather.weather') }}">{{ hostname }}</a></h1></li>
+          <li><a href="{{ url_for('weather.control') }}">Control Panel</a></li>
         </ul>
       </div>
-
       <div class="nav-sub-row">
         <ul class="nav-sub-right">
           <li><a href="{{ url_for('weather.weather') }}">Current Weather</a></li>
@@ -26,7 +22,6 @@
           <li><a href="{{ url_for('weather.historical') }}">Historical Data</a></li>
         </ul>
       </div>
-
       <div class="nav-bottom-row">
         <ul class="weather-metrics">
           <li><span class="weather-badge"><span id="nav-location-display">--</span></span></li>
@@ -35,49 +30,26 @@
           <li><span class="weather-badge">wind: <span id="nav-windspeed-display">--</span> mph</span></li>
           <li><span class="weather-badge">dir: <span id="nav-winddir-display">--</span></span></li>
         </ul>
-        <ul class="clock-container">
-          <li id="live-clock">--:--:-- --</li>
-        </ul>
       </div>
     </nav>
-
-    <main class="content">
-      {% block content %}{% endblock %}
-    </main>
-
+    <main class="content">{% block content %}{% endblock %}</main>
     <script>
       function getCardinalDirection(d) {
         const a = Number(d);
         if (isNaN(a)) return "N/A";
         return ["N", "NE", "E", "SE", "S", "SW", "W", "NW"][Math.round(a / 45) % 8];
       }
-
-      function updateClock() {
-        document.getElementById("live-clock").textContent = new Date().toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true,
-        });
-      }
-
       async function fetchMetric(path, id, transform = (v) => v) {
         try {
           const r = await fetch(path);
           const d = await r.json();
           const e = document.getElementById(id);
-
           if (e && d) {
             const k = Object.keys(d)[0];
-            if (d[k] != null) {
-              e.textContent = transform(d[k]);
-            }
+            if (d[k] != null) e.textContent = transform(d[k]);
           }
-        } catch (e) {
-          console.error("Weather metric error:", e);
-        }
+        } catch (e) { console.error("Weather metric error:", e); }
       }
-
       async function refreshAllMetrics() {
         await Promise.all([
           fetchMetric("/api/latest-temp", "nav-temp-display"),
@@ -87,9 +59,6 @@
           fetchMetric("/api/current-location", "nav-location-display"),
         ]);
       }
-
-      updateClock();
-      setInterval(updateClock, 1000);
       document.addEventListener("DOMContentLoaded", () => {
         refreshAllMetrics();
         setInterval(refreshAllMetrics, 15 * 60 * 1000);

@@ -3,37 +3,72 @@
 {% block content %}
 <div class="weather-current">
   <div class="page-heading">
-    <div><h1>Current Weather</h1><div class="location-label">{{ current_location or "Current location not configured" }}</div></div>
+    <div>
+      <h1>Current Weather</h1>
+      <div class="location-label">{{ current_location or "Current location not configured" }}</div>
+    </div>
     {% if record %}<div class="weather-updated">Observed {{ record["Time"] }}</div>{% endif %}
   </div>
 
   {% if record %}
-  <section class="weather-hero">
-    <div>
-      <div class="weather-eyebrow">CURRENT CONDITIONS</div>
-      <div class="weather-temp">{{ record["Temperature"] if record["Temperature"] is not none else "—" }}<span>°F</span></div>
-      <h2>{{ record["Description"] or "Weather conditions" }}</h2>
-      <p>Feels like {{ record["Feels Like"] if record["Feels Like"] is not none else "—" }}°F · {{ record["Location"] }}</p>
+  {% set description = (record["Description"] or "Current conditions") %}
+  {% set d = description|lower %}
+  {% if "thunder" in d %}{% set weather_icon = "⛈" %}{% set weather_theme = "storm" %}
+  {% elif "rain" in d or "drizzle" in d %}{% set weather_icon = "🌧" %}{% set weather_theme = "rain" %}
+  {% elif "snow" in d %}{% set weather_icon = "🌨" %}{% set weather_theme = "snow" %}
+  {% elif "cloud" in d or "overcast" in d %}{% set weather_icon = "☁️" %}{% set weather_theme = "cloud" %}
+  {% elif "mist" in d or "fog" in d or "haze" in d %}{% set weather_icon = "🌫" %}{% set weather_theme = "mist" %}
+  {% elif "clear" in d %}{% set weather_icon = "☀️" %}{% set weather_theme = "clear" %}
+  {% else %}{% set weather_icon = "🌤" %}{% set weather_theme = "mild" %}{% endif %}
+
+  <section class="weather-hero weather-theme-{{ weather_theme }}">
+    <div class="weather-hero-copy">
+      <div class="weather-eyebrow">CURRENT CONDITIONS · {{ record["Location"] or current_location }}</div>
+      <div class="weather-main-row">
+        <div class="weather-temp">{{ record["Temperature"] if record["Temperature"] is not none else "—" }}<span>°F</span></div>
+        <div class="weather-condition">
+          <span class="weather-icon" aria-hidden="true">{{ weather_icon }}</span>
+          <div><h2>{{ description }}</h2><p>Feels like {{ record["Feels Like"] if record["Feels Like"] is not none else "—" }}°F</p></div>
+        </div>
+      </div>
+      <div class="weather-hero-meta">
+        <span>💧 {{ record["Humidity"] if record["Humidity"] is not none else "—" }}% humidity</span>
+        <span>💨 {{ record["Wind Speed"] if record["Wind Speed"] is not none else "—" }} mph {{ record["Wind Direction"] if record["Wind Direction"] is not none else "—" }}°</span>
+        <span>☁ {{ record["Clouds"] if record["Clouds"] is not none else "—" }}% clouds</span>
+      </div>
     </div>
-    <div class="weather-icon" aria-hidden="true">
-      {% set d = (record["Description"] or "")|lower %}
-      {% if "thunder" in d %}⛈{% elif "rain" in d or "drizzle" in d %}🌧{% elif "snow" in d %}🌨{% elif "cloud" in d or "overcast" in d %}☁️{% elif "mist" in d or "fog" in d or "haze" in d %}🌫{% elif "clear" in d %}☀️{% else %}🌤{% endif %}
-    </div>
+    <div class="weather-orb" aria-hidden="true"><span>{{ weather_icon }}</span></div>
   </section>
 
   <div class="weather-grid">
-    <section class="weather-card"><span class="weather-label">HUMIDITY</span><strong>{{ record["Humidity"] if record["Humidity"] is not none else "—" }}%</strong><small>Relative humidity</small></section>
-    <section class="weather-card"><span class="weather-label">WIND</span><strong>{{ record["Wind Speed"] if record["Wind Speed"] is not none else "—" }} mph</strong><small>{{ record["Wind Direction"] if record["Wind Direction"] is not none else "—" }}° direction</small></section>
-    <section class="weather-card"><span class="weather-label">BAROMETER</span><strong>{{ record["Pressure"] if record["Pressure"] is not none else "—" }}</strong><small>Pressure</small></section>
-    <section class="weather-card"><span class="weather-label">DEW POINT</span><strong>{{ record["Dew Point"] if record["Dew Point"] is not none else "—" }}°</strong><small>Comfort indicator</small></section>
+    <section class="weather-card">
+      <span class="weather-label">HUMIDITY</span>
+      <strong>{{ record["Humidity"] if record["Humidity"] is not none else "—" }}<span>%</span></strong>
+      <small>Relative humidity</small>
+    </section>
+    <section class="weather-card">
+      <span class="weather-label">WIND</span>
+      <strong>{{ record["Wind Speed"] if record["Wind Speed"] is not none else "—" }} <span>mph</span></strong>
+      <small>{{ record["Wind Direction"] if record["Wind Direction"] is not none else "—" }}° direction</small>
+    </section>
+    <section class="weather-card">
+      <span class="weather-label">PRESSURE</span>
+      <strong>{{ record["Pressure"] if record["Pressure"] is not none else "—" }}</strong>
+      <small>Barometric pressure</small>
+    </section>
+    <section class="weather-card">
+      <span class="weather-label">DEW POINT</span>
+      <strong>{{ record["Dew Point"] if record["Dew Point"] is not none else "—" }}<span>°F</span></strong>
+      <small>Comfort indicator</small>
+    </section>
   </div>
 
-  <div class="weather-strip">
-    <div><b>{{ record["Sunrise"] or "—" }}</b><small>Sunrise</small></div>
-    <div><b>{{ record["Sunset"] or "—" }}</b><small>Sunset</small></div>
-    <div><b>{{ record["Clouds"] if record["Clouds"] is not none else "—" }}%</b><small>Cloud cover</small></div>
-    <div><b>{{ record["Time"] }}</b><small>Last observation</small></div>
-  </div>
+  <section class="weather-strip">
+    <div><span>☀</span><b>{{ record["Sunrise"] or "—" }}</b><small>Sunrise</small></div>
+    <div><span>◒</span><b>{{ record["Sunset"] or "—" }}</b><small>Sunset</small></div>
+    <div><span>☁</span><b>{{ record["Clouds"] if record["Clouds"] is not none else "—" }}%</b><small>Cloud cover</small></div>
+    <div><span>◷</span><b>{{ record["Time"] }}</b><small>Last observation</small></div>
+  </section>
   {% else %}
   <div class="empty-state"><h2>No current weather data</h2><p>No observation has been collected for <strong>{{ current_location }}</strong> yet.</p><p>Run the weather job for this location from the <a href="{{ url_for('weather.control') }}">Control Panel</a>.</p></div>
   {% endif %}

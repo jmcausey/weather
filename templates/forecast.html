@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Weather Forecast{% endblock %}
+{% block content %}
+<div class="weather-page forecast-page">
+  <div class="page-heading">
+    <div><h1>5-Day Forecast</h1><div class="location-label">{{ current_location }}</div></div>
+    <div class="forecast-source">OpenWeather</div>
+  </div>
+
+  {% if forecast and forecast.points %}
+    {% for day in forecast.points|groupby("date") %}
+      <section class="forecast-day">
+        <h2>{{ day.list[0].day }}</h2>
+        <div class="forecast-scroll">
+          {% for item in day.list %}
+          <article class="forecast-card">
+            <div class="forecast-time">{{ item.time.split(', ')[1] }}</div>
+            {% if item.icon %}
+              <img src="https://openweathermap.org/img/wn/{{ item.icon }}@2x.png" alt="{{ item.description }}" class="forecast-icon">
+            {% endif %}
+            <div class="forecast-temp">{{ item.temp }}°</div>
+            <div class="forecast-description">{{ item.description }}</div>
+            <div class="forecast-detail"><span>Feels</span><strong>{{ item.feels_like }}°</strong></div>
+            <div class="forecast-detail"><span>Rain</span><strong>{{ item.pop }}%</strong></div>
+            <div class="forecast-detail"><span>Wind</span><strong>{{ item.wind_speed }} mph</strong></div>
+            <div class="forecast-detail"><span>Humidity</span><strong>{{ item.humidity }}%</strong></div>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+    <p class="forecast-attribution">Forecast data provided by OpenWeather.</p>
+  {% else %}
+    <div class="empty-state">
+      <h2>Forecast unavailable</h2>
+      <p>OpenWeather forecast data could not be retrieved for <strong>{{ current_location }}</strong>.</p>
+      <p>Check that <code>OPENWEATHER_API_KEY</code> is configured and that the location has coordinates.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

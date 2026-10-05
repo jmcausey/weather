@@ -22,6 +22,69 @@ CURRENT_LOCATION = os.environ.get("CURRENT_LOCATION")
 OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 
+OPENWEATHER_FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
+
+
+def fetch_forecast(location_name=None):
+    """Fetch and normalize the OpenWeather 5-day / 3-hour forecast."""
+    location_name = location_name or CURRENT_LOCATION
+    if not OPENWEATHER_API_KEY or not location_name:
+        return None
+
+    latitude, longitude = get_location_coordinates(location_name)
+    if latitude is None or longitude is None:
+        print(f"No coordinates found for forecast location {location_name}")
+        return None
+
+    try:
+        response = requests.get(
+            OPENWEATHER_FORECAST_URL,
+            params={
+                "lat": latitude,
+                "lon": longitude,
+                "appid": OPENWEATHER_API_KEY,
+                "units": "imperial",
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except requests.RequestException as exc:
+        print(f"Error fetching forecast: {exc}")
+        return None
+
+    city = payload.get("city", {})
+    timezone_offset = city.get("timezone", 0)
+    points = []
+    for item in payload.get("list", []):
+        timestamp = datetime.utcfromtimestamp(item["dt"])
+        local_timestamp = timestamp + pd.Timedelta(seconds=timezone_offset)
+        weather = (item.get("weather") or [{}])[0]
+        main = item.get("main", {})
+        wind = item.get("wind", {})
+        points.append({
+            "time": local_timestamp.strftime("%a %b %-d, %-I:%M %p"),
+            "day": local_timestamp.strftime("%A"),
+            "date": local_timestamp.strftime("%Y-%m-%d"),
+            "temp": round(main["temp"]),
+            "feels_like": round(main["feels_like"]),
+            "description": weather.get("description", "").title(),
+            "icon": weather.get("icon"),
+            "pop": round((item.get("pop") or 0) * 100),
+            "humidity": main.get("humidity"),
+            "wind_speed": round(wind.get("speed", 0)),
+            "wind_deg": wind.get("deg"),
+            "clouds": item.get("clouds", {}).get("all"),
+        })
+
+    return {
+        "location": location_name,
+        "city": city.get("name") or location_name,
+        "country": city.get("country"),
+        "points": points,
+    }
+
+
 def load_locations() -> Dict[str, Tuple[float, float]]:
     try:
         with open(LOCATIONS_FILE, encoding="utf-8") as f:
